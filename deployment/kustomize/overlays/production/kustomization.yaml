@@ -1,0 +1,98 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+configMapGenerator:
+  - name: environment-variables
+    envs: [.env]
+    #behavior: replace
+
+replacements:
+  - source:
+      fieldPath: data.deploymentId
+      kind: ConfigMap
+      name: environment-variables
+      version: v1
+    targets:
+      - select:
+          kind: Deployment
+          version: v1
+        fieldPaths:
+          - metadata.name
+          - spec.selector.matchLabels.app
+          - spec.template.metadata.labels.app
+          - spec.template.spec.containers.*.env.[name=DEPLOYMENT_ID].value
+          - spec.template.spec.containers.*.name
+
+  - source:
+      fieldPath: data.commitId
+      kind: ConfigMap
+      name: environment-variables
+      version: v1
+    targets:
+      - select:
+          kind: Deployment
+          version: v1
+        fieldPaths:
+          - spec.template.metadata.annotations.git_commit
+
+  - source:
+      fieldPath: data.imageName
+      kind: ConfigMap
+      name: environment-variables
+      version: v1
+    targets:
+      - select:
+          kind: Deployment
+          version: v1
+        fieldPaths:
+          - spec.template.spec.containers.*.image
+
+
+  - source:
+      fieldPath: data.profile
+      kind: ConfigMap
+      name: environment-variables
+      version: v1
+    targets:
+      - select:
+          kind: Deployment
+          version: v1
+        fieldPaths:
+          - spec.template.spec.containers.*.env.[name=PROFILE_ARG].value
+
+  - source:
+      fieldPath: data.memoryRequest
+      kind: ConfigMap
+      name: environment-variables
+      version: v1
+    targets:
+      - select:
+          kind: Deployment
+          version: v1
+        fieldPaths:
+          - spec.template.spec.containers.*.resources.requests.memory
+
+  - source:
+      fieldPath: data.memoryLimit
+      kind: ConfigMap
+      name: environment-variables
+      version: v1
+    targets:
+      - select:
+          kind: Deployment
+          version: v1
+        fieldPaths:
+          - spec.template.spec.containers.*.resources.limits.memory
+
+# NOTE: This does not work, because the value is replaced with the literal `data.commitId` and not the actual config value.
+#patches:
+#  - target:
+#      version: v1
+#      kind: Deployment
+#    patch: |-
+#      - op: replace
+#        path: /spec/template/metadata/annotations/git.commit~1id
+#        value: $(data.commitId)
